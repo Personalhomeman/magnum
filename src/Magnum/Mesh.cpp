@@ -84,6 +84,46 @@ Debug& operator<<(Debug& debug, const MeshIndexType value) {
 }
 #endif
 
+UnsignedInt vertexFormatSize(const VertexFormat format) {
+    switch(format) {
+        case VertexFormat::UnsignedByte:
+        case VertexFormat::Byte:
+            return 1;
+        case VertexFormat::UnsignedShort:
+        case VertexFormat::Short:
+            return 2;
+        case VertexFormat::Float:
+        case VertexFormat::UnsignedInt:
+        case VertexFormat::Int:
+            return 4;
+        case VertexFormat::Vector2: return 8;
+        case VertexFormat::Vector3: return 12;
+        case VertexFormat::Vector4: return 16;
+    }
+
+    CORRADE_ASSERT(false, "vertexFormatSize(): invalid format" << format, {});
+}
+
+namespace {
+
+constexpr const char* VertexFormatNames[] {
+    #define _c(format) #format,
+    #include "Magnum/Implementation/vertexFormatMapping.hpp"
+    #undef _c
+};
+
+}
+
+Debug& operator<<(Debug& debug, const VertexFormat value) {
+    debug << "VertexFormat" << Debug::nospace;
+
+    if(UnsignedInt(value) - 1 < Containers::arraySize(VertexFormatNames)) {
+        return debug << "::" << Debug::nospace << VertexFormatNames[UnsignedInt(value) - 1];
+    }
+
+    return debug << "(" << Debug::nospace << reinterpret_cast<void*>(UnsignedInt(value)) << Debug::nospace << ")";
+}
+
 }
 
 namespace Corrade { namespace Utility {
@@ -98,6 +138,20 @@ std::string ConfigurationValue<Magnum::MeshPrimitive>::toString(Magnum::MeshPrim
 Magnum::MeshPrimitive ConfigurationValue<Magnum::MeshPrimitive>::fromString(const std::string& stringValue, ConfigurationValueFlags) {
     for(std::size_t i = 0; i != Containers::arraySize(Magnum::MeshPrimitiveNames); ++i)
         if(stringValue == Magnum::MeshPrimitiveNames[i]) return Magnum::MeshPrimitive(i + 1);
+
+    return {};
+}
+
+std::string ConfigurationValue<Magnum::VertexFormat>::toString(Magnum::VertexFormat value, ConfigurationValueFlags) {
+    if(Magnum::UnsignedInt(value) - 1 < Containers::arraySize(Magnum::VertexFormatNames))
+        return Magnum::VertexFormatNames[Magnum::UnsignedInt(value) - 1];
+
+    return {};
+}
+
+Magnum::VertexFormat ConfigurationValue<Magnum::VertexFormat>::fromString(const std::string& stringValue, ConfigurationValueFlags) {
+    for(std::size_t i = 0; i != Containers::arraySize(Magnum::VertexFormatNames); ++i)
+        if(stringValue == Magnum::VertexFormatNames[i]) return Magnum::VertexFormat(i + 1);
 
     return {};
 }

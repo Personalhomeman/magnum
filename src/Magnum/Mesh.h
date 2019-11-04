@@ -26,7 +26,7 @@
 */
 
 /** @file
- * @brief Enum @ref Magnum::MeshPrimitive, @ref Magnum::MeshIndexType, function @ref Magnum::meshIndexTypeSize()
+ * @brief Enum @ref Magnum::MeshPrimitive, @ref Magnum::MeshIndexType, @ref Magnum::VertexFormat, function @ref Magnum::meshIndexTypeSize(), @ref Magnum::vertexFormatSize()
  */
 
 #include <Corrade/Utility/StlForwardString.h>
@@ -184,6 +184,53 @@ MAGNUM_EXPORT UnsignedInt meshIndexTypeSize(MeshIndexType type);
 /** @debugoperatorenum{MeshIndexType} */
 MAGNUM_EXPORT Debug& operator<<(Debug& debug, MeshIndexType value);
 
+/**
+@brief Vertex format
+@m_since_latest
+
+Like @ref PixelFormat, but for mesh attributes --- including double-precision
+types and matrices.
+*/
+enum class VertexFormat: UnsignedInt {
+    /* Zero reserved for an invalid type (but not being a named value) */
+
+    Float = 1,          /**< @ref Float */
+    UnsignedByte,       /**< @ref UnsignedByte */
+    Byte,               /**< @ref Byte */
+    UnsignedShort,      /**< @ref UnsignedShort */
+    Short,              /**< @ref Short */
+    UnsignedInt,        /**< @ref UnsignedInt */
+    Int,                /**< @ref Int */
+
+    /**
+     * @ref Vector2. Usually used for 2D positions and 2D texture coordinates.
+     */
+    Vector2,
+
+    /**
+     * @ref Vector3 or @ref Color3. Usually used for 3D positions, normals and
+     * three-component colors.
+     */
+    Vector3,
+
+    /**
+     * @ref Vector4 or @ref Color4. Usually used for four-component colors.
+     */
+    Vector4
+};
+
+/**
+@brief Size of given vertex format
+@m_since_latest
+*/
+MAGNUM_EXPORT UnsignedInt vertexFormatSize(VertexFormat format);
+
+/**
+@debugoperatorenum{VertexFormat}
+@m_since_latest
+*/
+MAGNUM_EXPORT Debug& operator<<(Debug& debug, VertexFormat value);
+
 }
 
 namespace Corrade { namespace Utility {
@@ -224,6 +271,28 @@ template<> struct MAGNUM_EXPORT ConfigurationValue<Magnum::MeshIndexType> {
      * If the value is invalid, returns a zero (invalid) type.
      */
     static Magnum::MeshIndexType fromString(const std::string& stringValue, ConfigurationValueFlags);
+};
+
+/**
+@configurationvalue{Magnum::VertexFormat}
+@m_since_latest
+*/
+template<> struct MAGNUM_EXPORT ConfigurationValue<Magnum::VertexFormat> {
+    ConfigurationValue() = delete;
+
+    /**
+     * @brief Write enum value as string
+     *
+     * If the value is invalid, returns empty string.
+     */
+    static std::string toString(Magnum::VertexFormat value, ConfigurationValueFlags);
+
+    /**
+     * @brief Read enum value as string
+     *
+     * If the value is invalid, returns a zero (invalid) type.
+     */
+    static Magnum::VertexFormat fromString(const std::string& stringValue, ConfigurationValueFlags);
 };
 
 }}

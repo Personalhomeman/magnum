@@ -29,6 +29,7 @@
 #include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Mesh.h"
+#include "Magnum/Math/Vector4.h"
 
 namespace Magnum { namespace Test { namespace {
 
@@ -36,28 +37,40 @@ struct MeshTest: TestSuite::Tester {
     explicit MeshTest();
 
     void primitiveMapping();
+    void vertexFormatMapping();
     void indexTypeMapping();
 
+    void vertexFormatSize();
+    void vertexFormatSizeInvalid();
     void indexTypeSize();
     void indexTypeSizeInvalid();
 
     void debugPrimitive();
     void debugIndexType();
+    void debugVertexFormat();
+
     void configurationPrimitive();
     void configurationIndexType();
+    void configurationVertexFormat();
 };
 
 MeshTest::MeshTest() {
     addTests({&MeshTest::primitiveMapping,
+              &MeshTest::vertexFormatMapping,
               &MeshTest::indexTypeMapping,
 
+              &MeshTest::vertexFormatSize,
+              &MeshTest::vertexFormatSizeInvalid,
               &MeshTest::indexTypeSize,
               &MeshTest::indexTypeSizeInvalid,
 
               &MeshTest::debugPrimitive,
               &MeshTest::debugIndexType,
+              &MeshTest::debugVertexFormat,
+
               &MeshTest::configurationPrimitive,
-              &MeshTest::configurationIndexType});
+              &MeshTest::configurationIndexType,
+              &MeshTest::configurationVertexFormat});
 }
 
 void MeshTest::primitiveMapping() {
@@ -136,6 +149,63 @@ void MeshTest::indexTypeMapping() {
     CORRADE_COMPARE(firstUnhandled, 0xff);
 }
 
+void MeshTest::vertexFormatMapping() {
+    /* This goes through the first 16 bits, which should be enough. Going
+       through 32 bits takes 8 seconds, too much. */
+    UnsignedInt firstUnhandled = 0xffff;
+    UnsignedInt nextHandled = 1; /* 0 is an invalid type */
+    for(UnsignedInt i = 1; i <= 0xffff; ++i) {
+        const auto type = VertexFormat(i);
+        /* Each case verifies:
+           - that the entries are ordered by number by comparing a function to
+             expected result (so insertion here is done in proper place)
+           - that there was no gap (unhandled value inside the range) */
+        #ifdef __GNUC__
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic error "-Wswitch"
+        #endif
+        switch(type) {
+            #define _c(type) \
+                case VertexFormat::type: \
+                    CORRADE_COMPARE(Utility::ConfigurationValue<VertexFormat>::toString(VertexFormat::type, {}), #type); \
+                    CORRADE_COMPARE(nextHandled, i); \
+                    CORRADE_COMPARE(firstUnhandled, 0xffff); \
+                    ++nextHandled; \
+                    continue;
+            #include "Magnum/Implementation/vertexFormatMapping.hpp"
+            #undef _c
+        }
+        #ifdef __GNUC__
+        #pragma GCC diagnostic pop
+        #endif
+
+        /* Not handled by any value, remember -- we might either be at the end
+           of the enum range (which is okay) or some value might be unhandled
+           here */
+        firstUnhandled = i;
+    }
+
+    CORRADE_COMPARE(firstUnhandled, 0xffff);
+}
+
+void MeshTest::vertexFormatSize() {
+    CORRADE_COMPARE(Magnum::vertexFormatSize(VertexFormat::Vector2), sizeof(Vector2));
+    CORRADE_COMPARE(Magnum::vertexFormatSize(VertexFormat::Vector3), sizeof(Vector3));
+    CORRADE_COMPARE(Magnum::vertexFormatSize(VertexFormat::Vector4), sizeof(Vector4));
+}
+
+void MeshTest::vertexFormatSizeInvalid() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    Magnum::vertexFormatSize(VertexFormat{});
+    Magnum::vertexFormatSize(VertexFormat(0xdead));
+
+    CORRADE_COMPARE(out.str(),
+        "vertexFormatSize(): invalid type VertexFormat(0x0)\n"
+        "vertexFormatSize(): invalid type VertexFormat(0xdead)\n");
+}
+
 void MeshTest::indexTypeSize() {
     CORRADE_COMPARE(meshIndexTypeSize(MeshIndexType::UnsignedByte), 1);
     CORRADE_COMPARE(meshIndexTypeSize(MeshIndexType::UnsignedShort), 2);
@@ -164,6 +234,12 @@ void MeshTest::debugIndexType() {
     std::ostringstream o;
     Debug(&o) << MeshIndexType::UnsignedShort << MeshIndexType(0xdead);
     CORRADE_COMPARE(o.str(), "MeshIndexType::UnsignedShort MeshIndexType(0xdead)\n");
+}
+
+void MeshTest::debugVertexFormat() {
+    std::ostringstream o;
+    Debug(&o) << VertexFormat::Vector4 << VertexFormat(0xdead);
+    CORRADE_COMPARE(o.str(), "VertexFormat::Vector4 VertexFormat(0xdead)\n");
 }
 
 void MeshTest::configurationPrimitive() {
@@ -196,6 +272,22 @@ void MeshTest::configurationIndexType() {
     c.setValue("invalid", MeshIndexType(0xdead));
     CORRADE_COMPARE(c.value("invalid"), "");
     CORRADE_COMPARE(c.value<MeshIndexType>("invalid"), MeshIndexType{});
+}
+
+void MeshTest::configurationVertexFormat() {
+    Utility::Configuration c;
+
+    c.setValue("type", VertexFormat::Vector3);
+    CORRADE_COMPARE(c.value("type"), "Vector3");
+    CORRADE_COMPARE(c.value<VertexFormat>("type"), VertexFormat::Vector3);
+
+    c.setValue("zero", VertexFormat{});
+    CORRADE_COMPARE(c.value("zero"), "");
+    CORRADE_COMPARE(c.value<VertexFormat>("zero"), VertexFormat{});
+
+    c.setValue("invalid", VertexFormat(0xdead));
+    CORRADE_COMPARE(c.value("invalid"), "");
+    CORRADE_COMPARE(c.value<VertexFormat>("invalid"), VertexFormat{});
 }
 
 }}}
