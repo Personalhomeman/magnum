@@ -175,6 +175,17 @@ class MAGNUM_ANYSCENEIMPORTER_EXPORT AnySceneImporter: public AbstractImporter {
         MAGNUM_ANYSCENEIMPORTER_LOCAL std::string doObject3DName(UnsignedInt id) override;
         MAGNUM_ANYSCENEIMPORTER_LOCAL Containers::Pointer<ObjectData3D> doObject3D(UnsignedInt id) override;
 
+        MAGNUM_ANYSCENEIMPORTER_LOCAL UnsignedInt doMeshCount() const override;
+        MAGNUM_ANYSCENEIMPORTER_LOCAL Int doMeshForName(const std::string& name) override;
+        MAGNUM_ANYSCENEIMPORTER_LOCAL std::string doMeshName(UnsignedInt id) override;
+        MAGNUM_ANYSCENEIMPORTER_LOCAL Containers::Optional<MeshData> doMesh(UnsignedInt id, UnsignedInt level) override;
+
+        MAGNUM_ANYSCENEIMPORTER_LOCAL MeshAttribute doMeshAttributeForName(const std::string& name) override;
+        MAGNUM_ANYSCENEIMPORTER_LOCAL std::string doMeshAttributeName(UnsignedByte id) override;
+
+        #ifdef MAGNUM_BUILD_DEPRECATED
+        /* MSVC complains for all, GCC/Clang just for the return type */
+        CORRADE_IGNORE_DEPRECATED_PUSH
         MAGNUM_ANYSCENEIMPORTER_LOCAL UnsignedInt doMesh2DCount() const override;
         MAGNUM_ANYSCENEIMPORTER_LOCAL Int doMesh2DForName(const std::string& name) override;
         MAGNUM_ANYSCENEIMPORTER_LOCAL std::string doMesh2DName(UnsignedInt id) override;
@@ -184,6 +195,8 @@ class MAGNUM_ANYSCENEIMPORTER_EXPORT AnySceneImporter: public AbstractImporter {
         MAGNUM_ANYSCENEIMPORTER_LOCAL Int doMesh3DForName(const std::string& name) override;
         MAGNUM_ANYSCENEIMPORTER_LOCAL std::string doMesh3DName(UnsignedInt id) override;
         MAGNUM_ANYSCENEIMPORTER_LOCAL Containers::Optional<MeshData3D> doMesh3D(UnsignedInt id) override;
+        CORRADE_IGNORE_DEPRECATED_POP
+        #endif
 
         MAGNUM_ANYSCENEIMPORTER_LOCAL UnsignedInt doMaterialCount() const override;
         MAGNUM_ANYSCENEIMPORTER_LOCAL Int doMaterialForName(const std::string& name) override;
