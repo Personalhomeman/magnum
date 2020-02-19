@@ -29,12 +29,9 @@ corrade_add_test(ImageTest ImageTest.cpp LIBRARIES MagnumTestLib)
 corrade_add_test(ImageViewTest ImageViewTest.cpp LIBRARIES MagnumTestLib)
 corrade_add_test(MeshTest MeshTest.cpp LIBRARIES MagnumTestLib)
 corrade_add_test(PixelFormatTest PixelFormatTest.cpp LIBRARIES MagnumTestLib)
-target_compile_definitions(PixelFormatTest PRIVATE "CORRADE_GRACEFUL_ASSERT")
 corrade_add_test(PixelStorageTest PixelStorageTest.cpp LIBRARIES Magnum)
 corrade_add_test(ResourceManagerTest ResourceManagerTest.cpp LIBRARIES Magnum)
-target_compile_definitions(ResourceManagerTest PRIVATE "CORRADE_GRACEFUL_ASSERT")
 corrade_add_test(SamplerTest SamplerTest.cpp LIBRARIES MagnumTestLib)
-
 corrade_add_test(TagsTest TagsTest.cpp LIBRARIES Magnum)
 
 set_target_properties(
@@ -48,3 +45,9 @@ set_target_properties(
     SamplerTest
     TagsTest
     PROPERTIES FOLDER "Magnum/Test")
+
+set_property(TARGET
+    MeshTest
+    PixelFormatTest
+    ResourceManagerTest
+    APPEND PROPERTY COMPILE_DEFINITIONS "CORRADE_GRACEFUL_ASSERT")

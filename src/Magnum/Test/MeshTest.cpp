@@ -40,19 +40,29 @@ struct MeshTest: TestSuite::Tester {
     void vertexFormatMapping();
     void indexTypeMapping();
 
+    void vertexFormatIsImplementationSpecific();
+    void vertexFormatWrap();
+    void vertexFormatWrapInvalid();
+    void vertexFormatUnwrap();
+    void vertexFormatUnwrapInvalid();
     void vertexFormatSize();
     void vertexFormatSizeInvalid();
+    void vertexFormatSizeImplementationSpecific();
     void vertexFormatComponentCount();
     void vertexFormatComponentCountInvalid();
+    void vertexFormatComponentCountImplementationSpecific();
     void vertexFormatComponentFormat();
     void vertexFormatComponentFormatInvalid();
+    void vertexFormatComponentFormatImplementationSpecific();
     void vertexFormatIsNormalized();
     void vertexFormatIsNormalizedInvalid();
+    void vertexFormatIsNormalizedImplementationSpecific();
 
     void vertexFormatAssemble();
     void vertexFormatAssembleRoundtrip();
     void vertexFormatAssembleCantNormalize();
     void vertexFormatAssembleInvalidComponentCount();
+    void vertexFormatAssembleImplementationSpecific();
 
     void indexTypeSize();
     void indexTypeSizeInvalid();
@@ -60,6 +70,7 @@ struct MeshTest: TestSuite::Tester {
     void debugPrimitive();
     void debugIndexType();
     void debugVertexFormat();
+    void debugVertexFormatImplementationSpecific();
 
     void configurationPrimitive();
     void configurationIndexType();
@@ -89,14 +100,23 @@ MeshTest::MeshTest() {
               &MeshTest::vertexFormatMapping,
               &MeshTest::indexTypeMapping,
 
+              &MeshTest::vertexFormatIsImplementationSpecific,
+              &MeshTest::vertexFormatWrap,
+              &MeshTest::vertexFormatWrapInvalid,
+              &MeshTest::vertexFormatUnwrap,
+              &MeshTest::vertexFormatUnwrapInvalid,
               &MeshTest::vertexFormatSize,
               &MeshTest::vertexFormatSizeInvalid,
+              &MeshTest::vertexFormatSizeImplementationSpecific,
               &MeshTest::vertexFormatComponentCount,
               &MeshTest::vertexFormatComponentCountInvalid,
+              &MeshTest::vertexFormatComponentCountImplementationSpecific,
               &MeshTest::vertexFormatComponentFormat,
               &MeshTest::vertexFormatComponentFormatInvalid,
+              &MeshTest::vertexFormatComponentFormatImplementationSpecific,
               &MeshTest::vertexFormatIsNormalized,
               &MeshTest::vertexFormatIsNormalizedInvalid,
+              &MeshTest::vertexFormatIsNormalizedImplementationSpecific,
 
               &MeshTest::vertexFormatAssemble});
 
@@ -105,6 +125,7 @@ MeshTest::MeshTest() {
 
     addTests({&MeshTest::vertexFormatAssembleCantNormalize,
               &MeshTest::vertexFormatAssembleInvalidComponentCount,
+              &MeshTest::vertexFormatAssembleImplementationSpecific,
 
               &MeshTest::indexTypeSize,
               &MeshTest::indexTypeSizeInvalid,
@@ -112,6 +133,7 @@ MeshTest::MeshTest() {
               &MeshTest::debugPrimitive,
               &MeshTest::debugIndexType,
               &MeshTest::debugVertexFormat,
+              &MeshTest::debugVertexFormatImplementationSpecific,
 
               &MeshTest::configurationPrimitive,
               &MeshTest::configurationIndexType,
@@ -233,6 +255,41 @@ void MeshTest::vertexFormatMapping() {
     CORRADE_COMPARE(firstUnhandled, 0xffff);
 }
 
+void MeshTest::vertexFormatIsImplementationSpecific() {
+    constexpr bool a = isVertexFormatImplementationSpecific(VertexFormat::Vector2sNormalized);
+    constexpr bool b = isVertexFormatImplementationSpecific(VertexFormat(0x8000dead));
+    CORRADE_VERIFY(!a);
+    CORRADE_VERIFY(b);
+}
+
+void MeshTest::vertexFormatWrap() {
+    constexpr VertexFormat a = Magnum::vertexFormatWrap(0xdead);
+    CORRADE_COMPARE(UnsignedInt(a), 0x8000dead);
+}
+
+void MeshTest::vertexFormatWrapInvalid() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    Magnum::vertexFormatWrap(0xdeadbeef);
+
+    CORRADE_COMPARE(out.str(), "vertexFormatWrap(): implementation-specific value 0xdeadbeef already wrapped or too large\n");
+}
+
+void MeshTest::vertexFormatUnwrap() {
+    constexpr UnsignedInt a = Magnum::vertexFormatUnwrap(VertexFormat(0x8000dead));
+    CORRADE_COMPARE(a, 0xdead);
+}
+
+void MeshTest::vertexFormatUnwrapInvalid() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    Magnum::vertexFormatUnwrap(VertexFormat::Float);
+
+    CORRADE_COMPARE(out.str(), "vertexFormatUnwrap(): VertexFormat::Float isn't a wrapped implementation-specific value\n");
+}
+
 void MeshTest::vertexFormatSize() {
     CORRADE_COMPARE(Magnum::vertexFormatSize(VertexFormat::Vector2), sizeof(Vector2));
     CORRADE_COMPARE(Magnum::vertexFormatSize(VertexFormat::Vector3), sizeof(Vector3));
@@ -249,6 +306,13 @@ void MeshTest::vertexFormatSizeInvalid() {
     CORRADE_COMPARE(out.str(),
         "vertexFormatSize(): invalid format VertexFormat(0x0)\n"
         "vertexFormatSize(): invalid format VertexFormat(0xdead)\n");
+}
+
+void MeshTest::vertexFormatSizeImplementationSpecific() {
+    std::ostringstream out;
+    Error redirectError{&out};
+    Magnum::vertexFormatSize(Magnum::vertexFormatWrap(0xdead));
+    CORRADE_COMPARE(out.str(), "vertexFormatSize(): can't determine size of an implementation-specific format 0xdead\n");
 }
 
 void MeshTest::vertexFormatComponentCount() {
@@ -268,6 +332,14 @@ void MeshTest::vertexFormatComponentCountInvalid() {
     CORRADE_COMPARE(out.str(),
         "vertexFormatComponentCount(): invalid format VertexFormat(0x0)\n"
         "vertexFormatComponentCount(): invalid format VertexFormat(0xdead)\n");
+}
+
+void MeshTest::vertexFormatComponentCountImplementationSpecific() {
+    std::ostringstream out;
+    Error redirectError{&out};
+    Magnum::vertexFormatComponentCount(Magnum::vertexFormatWrap(0xdead));
+    CORRADE_COMPARE(out.str(),
+        "vertexFormatComponentCount(): can't determine component count of an implementation-specific format 0xdead\n");
 }
 
 void MeshTest::vertexFormatComponentFormat() {
@@ -295,6 +367,14 @@ void MeshTest::vertexFormatComponentFormatInvalid() {
         "vertexFormatComponentType(): invalid format VertexFormat(0xdead)\n");
 }
 
+void MeshTest::vertexFormatComponentFormatImplementationSpecific() {
+    std::ostringstream out;
+    Error redirectError{&out};
+    Magnum::vertexFormatComponentFormat(Magnum::vertexFormatWrap(0xdead));
+    CORRADE_COMPARE(out.str(),
+        "vertexFormatComponentFormat(): can't determine component format of an implementation-specific format 0xdead\n");
+}
+
 void MeshTest::vertexFormatIsNormalized() {
     CORRADE_VERIFY(isVertexFormatNormalized(VertexFormat::UnsignedByteNormalized));
     CORRADE_VERIFY(!isVertexFormatNormalized(VertexFormat::Vector2us));
@@ -312,6 +392,14 @@ void MeshTest::vertexFormatIsNormalizedInvalid() {
     CORRADE_COMPARE(out.str(),
         "isVertexFormatNormalized(): invalid format VertexFormat(0x0)\n"
         "isVertexFormatNormalized(): invalid format VertexFormat(0xdead)\n");
+}
+
+void MeshTest::vertexFormatIsNormalizedImplementationSpecific() {
+    std::ostringstream out;
+    Error redirectError{&out};
+    isVertexFormatNormalized(Magnum::vertexFormatWrap(0xdead));
+    CORRADE_COMPARE(out.str(),
+        "isVertexFormatNormalized(): can't determine normalization of an implementation-specific format 0xdead\n");
 }
 
 void MeshTest::vertexFormatAssemble() {
@@ -365,6 +453,14 @@ void MeshTest::vertexFormatAssembleInvalidComponentCount() {
         "vertexFormat(): invalid component count 5\n");
 }
 
+void MeshTest::vertexFormatAssembleImplementationSpecific() {
+    std::ostringstream out;
+    Error redirectError{&out};
+    vertexFormat(Magnum::vertexFormatWrap(0xdead), 1, true);
+    CORRADE_COMPARE(out.str(),
+        "vertexFormat(): can't assemble a format out of an implementation-specific format 0xdead\n");
+}
+
 void MeshTest::indexTypeSize() {
     CORRADE_COMPARE(meshIndexTypeSize(MeshIndexType::UnsignedByte), 1);
     CORRADE_COMPARE(meshIndexTypeSize(MeshIndexType::UnsignedShort), 2);
@@ -399,6 +495,12 @@ void MeshTest::debugVertexFormat() {
     std::ostringstream o;
     Debug(&o) << VertexFormat::Vector4 << VertexFormat(0xdead);
     CORRADE_COMPARE(o.str(), "VertexFormat::Vector4 VertexFormat(0xdead)\n");
+}
+
+void MeshTest::debugVertexFormatImplementationSpecific() {
+    std::ostringstream o;
+    Debug(&o) << Magnum::vertexFormatWrap(0xdead);
+    CORRADE_COMPARE(o.str(), "VertexFormat::ImplementationSpecific(0xdead)\n");
 }
 
 void MeshTest::configurationPrimitive() {
