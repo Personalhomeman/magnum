@@ -54,6 +54,14 @@ constexpr VkIndexType IndexTypeMapping[]{
 #ifndef DOXYGEN_GENERATING_OUTPUT /* It gets *really* confused */
 static_assert(VK_FORMAT_UNDEFINED == 0, "VK_FORMAT_UNDEFINED is assumed to be 0");
 
+constexpr VkFormat VertexFormatMapping[] {
+    #define _c(input, format) VK_FORMAT_ ## format,
+    #define _s(input) {},
+    #include "Magnum/Vk/Implementation/vertexFormatMapping.hpp"
+    #undef _s
+    #undef _c
+};
+
 constexpr VkFormat PixelFormatMapping[] {
     #define _c(input, format) VK_FORMAT_ ## format,
     #define _s(input) {},
@@ -122,6 +130,15 @@ VkIndexType vkIndexType(const Magnum::MeshIndexType type) {
     return out;
 }
 
+bool hasVkFormat(const Magnum::VertexFormat format) {
+    if(isVertexFormatImplementationSpecific(format))
+        return true;
+
+    CORRADE_ASSERT(UnsignedInt(format) - 1 < Containers::arraySize(VertexFormatMapping),
+        "Vk::hasVkFormat(): invalid format" << format, {});
+    return UnsignedInt(VertexFormatMapping[UnsignedInt(format) - 1]);
+}
+
 bool hasVkFormat(const Magnum::PixelFormat format) {
     if(isPixelFormatImplementationSpecific(format))
         return true;
@@ -138,6 +155,18 @@ bool hasVkFormat(const Magnum::CompressedPixelFormat format) {
     CORRADE_ASSERT(UnsignedInt(format) - 1 < Containers::arraySize(CompressedPixelFormatMapping),
         "Vk::hasVkFormat(): invalid format" << format, {});
     return UnsignedInt(CompressedPixelFormatMapping[UnsignedInt(format) - 1]);
+}
+
+VkFormat vkFormat(const Magnum::VertexFormat format) {
+    if(isVertexFormatImplementationSpecific(format))
+        return vertexFormatUnwrap<VkFormat>(format);
+
+    CORRADE_ASSERT(UnsignedInt(format) - 1 < Containers::arraySize(VertexFormatMapping),
+        "Vk::vkFormat(): invalid format" << format, {});
+    const VkFormat out = VertexFormatMapping[UnsignedInt(format) - 1];
+    CORRADE_ASSERT(UnsignedInt(out),
+        "Vk::vkFormat(): unsupported format" << format, {});
+    return out;
 }
 
 VkFormat vkFormat(const Magnum::PixelFormat format) {
