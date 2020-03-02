@@ -59,7 +59,9 @@ struct CompressIndicesTest: TestSuite::Tester {
     void compressMeshDataMove();
     void compressMeshDataNonIndexed();
 
+    #ifdef MAGNUM_BUILD_DEPRECATED
     void compressAsShort();
+    #endif
 };
 
 CompressIndicesTest::CompressIndicesTest() {
@@ -86,7 +88,10 @@ CompressIndicesTest::CompressIndicesTest() {
               &CompressIndicesTest::compressMeshDataMove,
               &CompressIndicesTest::compressMeshDataNonIndexed,
 
-              &CompressIndicesTest::compressAsShort});
+              #ifdef MAGNUM_BUILD_DEPRECATED
+              &CompressIndicesTest::compressAsShort
+              #endif
+              });
 }
 
 template<class T> void CompressIndicesTest::compressUnsignedByte() {
@@ -311,7 +316,9 @@ void CompressIndicesTest::compressMeshDataNonIndexed() {
         "MeshTools::compressIndices(): mesh data not indexed\n");
 }
 
+#ifdef MAGNUM_BUILD_DEPRECATED
 void CompressIndicesTest::compressAsShort() {
+    CORRADE_IGNORE_DEPRECATED_PUSH
     CORRADE_COMPARE_AS(MeshTools::compressIndicesAs<UnsignedShort>({123, 456}),
         Containers::arrayView<UnsignedShort>({123, 456}),
         TestSuite::Compare::Container);
@@ -320,7 +327,9 @@ void CompressIndicesTest::compressAsShort() {
     Error redirectError{&out};
     MeshTools::compressIndicesAs<UnsignedShort>({65536});
     CORRADE_COMPARE(out.str(), "MeshTools::compressIndicesAs(): type too small to represent value 65536\n");
+    CORRADE_IGNORE_DEPRECATED_POP
 }
+#endif
 
 }}}}
 
