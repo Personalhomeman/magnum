@@ -57,6 +57,9 @@ struct InterleaveTest: Corrade::TestSuite::Tester {
     void isInterleavedUnordered();
     void isInterleavedAttributeAcrossStride();
 
+    void interleavedData();
+    void interleavedDataNotInterleaved();
+
     void interleavedLayout();
     void interleavedLayoutExtra();
     void interleavedLayoutExtraAliased();
@@ -96,6 +99,9 @@ InterleaveTest::InterleaveTest() {
               &InterleaveTest::isInterleavedAliased,
               &InterleaveTest::isInterleavedUnordered,
               &InterleaveTest::isInterleavedAttributeAcrossStride,
+
+              &InterleaveTest::interleavedData,
+              &InterleaveTest::interleavedDataNotInterleaved,
 
               &InterleaveTest::interleavedLayout,
               &InterleaveTest::interleavedLayoutExtra,
@@ -326,6 +332,42 @@ void InterleaveTest::isInterleavedAttributeAcrossStride() {
     Trade::MeshData data2{MeshPrimitive::Triangles,
         std::move(vertexData), {positions, normals2}};
     CORRADE_VERIFY(!MeshTools::isInterleaved(data2));
+}
+
+void InterleaveTest::interleavedData() {
+    Containers::Array<char> vertexData{100 + 3*40};
+    Containers::StridedArrayView1D<Vector3> normals{vertexData,
+        reinterpret_cast<Vector3*>(vertexData.data() + 100 + 24), 3, 40};
+    Containers::StridedArrayView1D<Vector2> positions{vertexData,
+        reinterpret_cast<Vector2*>(vertexData.data() + 100 + 5), 3, 40};
+
+    Trade::MeshData data{MeshPrimitive::Triangles, std::move(vertexData), {
+        Trade::MeshAttributeData{Trade::MeshAttribute::Normal, normals},
+        Trade::MeshAttributeData{Trade::MeshAttribute::Position, positions}
+    }};
+
+    CORRADE_VERIFY(MeshTools::isInterleaved(data));
+    Containers::StridedArrayView2D<const char> interleaved = MeshTools::interleavedData(data);
+    CORRADE_COMPARE(interleaved.data(), positions.data());
+    CORRADE_COMPARE(interleaved.size()[0], 3);
+    CORRADE_COMPARE(interleaved.size()[1], 31);
+    CORRADE_COMPARE(interleaved.stride()[0], 40);
+    CORRADE_COMPARE(interleaved.stride()[1], 1);
+}
+
+void InterleaveTest::interleavedDataNotInterleaved() {
+    Containers::Array<char> vertexData{100 + 3*20};
+    Trade::MeshAttributeData positions{Trade::MeshAttribute::Position,
+        Containers::arrayCast<Vector2>(vertexData.suffix(100).prefix(3*8))};
+    Trade::MeshAttributeData normals{Trade::MeshAttribute::Normal,
+        Containers::arrayCast<Vector3>(vertexData.suffix(100).suffix(3*8))};
+
+    Trade::MeshData data{MeshPrimitive::Triangles, std::move(vertexData), {positions, normals}};
+
+    std::ostringstream out;
+    Error redirectError{&out};
+    MeshTools::interleavedData(data);
+    CORRADE_COMPARE(out.str(), "MeshTools::interleavedData(): the mesh is not interleaved\n");
 }
 
 void InterleaveTest::interleavedLayout() {
